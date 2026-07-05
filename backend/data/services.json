@@ -1,0 +1,38 @@
+[
+  {
+    "number": "01",
+    "title": "Architectural Design",
+    "desc": "Full-spectrum design services from initial concept to construction documentation. We develop buildings that respond authentically to their site, programme, and people with no compromise between beauty and function.",
+    "id": 1
+  },
+  {
+    "number": "02",
+    "title": "Interior Architecture",
+    "desc": "We design interiors that are an inseparable extension of the architecture where materials, light, and spatial sequence work together to create environments that feel genuinely crafted and deeply lovable.",
+    "id": 2
+  },
+  {
+    "number": "03",
+    "title": "Renovation & Adaptive Reuse",
+    "desc": "We transform existing structures with sensitivity and precision preserving what is worth keeping, reimagining what is not, and always seeking the opportunity that the original building offers but hasn't yet realised.",
+    "id": 3
+  },
+  {
+    "number": "04",
+    "title": "Master Planning & Urban Design",
+    "desc": "At the neighbourhood and city scale, we develop masterplans that are legible, humane, and resilient frameworks for urban life that balance density, identity, movement, and public space with intelligence and care.",
+    "id": 4
+  },
+  {
+    "number": "05",
+    "title": "Project Management & Site Supervision",
+    "desc": "We protect the integrity of the design through construction, coordinating consultants, reviewing progress, and ensuring every detail is realised as intended. Our involvement doesn't end at the drawing it ends at the door.",
+    "id": 5
+  },
+  {
+    "number": "06",
+    "title": "Sustainable Design Consulting",
+    "desc": "Sustainability is not an add-on at Tereios it is embedded in every design decision we make. We advise on passive design strategies, green certifications, and environmental performance from the earliest stages of a project.",
+    "id": 6
+  }
+]

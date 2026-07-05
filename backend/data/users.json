@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "email": "admin@teleios.com",
+    "password": "$2b$12$xw9gm2bJM7Ht6pN4kewQqulKYEHKI/YNrgCXKbkpEzmzAa8H11CBa",
+    "name": "Admin",
+    "role": "admin",
+    "createdAt": "2026-07-03T13:35:24.875Z"
+  }
+]
