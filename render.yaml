@@ -7,20 +7,20 @@ services:
     startCommand: node index.js
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: "20"
+      - key: DB_HOST
+        value: mysql-1aeb2ddc-teleios-arch.e.aivencloud.com
+      - key: DB_PORT
+        value: "10460"
+      - key: DB_USER
+        value: avnadmin
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: defaultdb
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
         value: admin@teleios.com
       - key: ADMIN_PASSWORD
         generateValue: true
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: 3306
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
