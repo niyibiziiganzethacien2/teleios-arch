@@ -16,6 +16,8 @@ services:
         value: avnadmin
       - key: DB_PASSWORD
         sync: false
+      - key: DB_SSL
+        value: "true"
       - key: DB_NAME
         value: defaultdb
       - key: JWT_SECRET

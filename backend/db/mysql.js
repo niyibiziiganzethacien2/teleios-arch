@@ -1,6 +1,6 @@
 const mysql = require('mysql2/promise');
 
-const ssl = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
+const ssl = (process.env.DB_SSL === 'true' || (process.env.DB_HOST || '').includes('aivencloud')) ? { rejectUnauthorized: false } : undefined;
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
