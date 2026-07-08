@@ -300,8 +300,12 @@ async function seedData() {
 const distPath = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(distPath));
 app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
   const index = path.join(distPath, 'index.html');
-  require('fs').access(index).then(() => res.sendFile(index)).catch(() => next());
+  fs.access(index, fs.constants.F_OK, (err) => {
+    if (err) return next();
+    res.sendFile(index);
+  });
 });
 
 app.listen(PORT, () => {
