@@ -1,4 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import Toast from './Toast';
+import ConfirmModal from './ConfirmModal';
 
 const BASE = '/api';
 
@@ -48,6 +50,27 @@ export default function AdminDashboard({ user, onLogout }) {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState('');
+  const [toasts, setToasts] = useState([]);
+  const [confirmMsg, setConfirmMsg] = useState(null);
+  const confirmResolveRef = useRef(null);
+
+  const showToast = useCallback((message, type = 'info', duration = 3000) => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    return id;
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, dismissing: true } : t));
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 250);
+  }, []);
+
+  const showConfirm = useCallback((message) => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+      setConfirmMsg(message);
+    });
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -143,19 +166,20 @@ export default function AdminDashboard({ user, onLogout }) {
       setEditing(null);
       setForm({});
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
     setSaving(false);
   };
 
   const deleteMember = async (id) => {
-    if (!confirm('Delete this team member?')) return;
+    const ok = await showConfirm('Delete this team member?');
+    if (!ok) return;
     try {
       const res = await fetch(`${BASE}/admin/team/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error('Delete failed');
       setTeam(prev => prev.filter(m => m.id !== id));
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
   };
 
@@ -176,19 +200,20 @@ export default function AdminDashboard({ user, onLogout }) {
       setEditingService(null);
       setServiceForm({});
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
     setSaving(false);
   };
 
   const deleteService = async (id) => {
-    if (!confirm('Delete this service?')) return;
+    const ok = await showConfirm('Delete this service?');
+    if (!ok) return;
     try {
       const res = await fetch(`${BASE}/admin/services/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error('Delete failed');
       setServices(prev => prev.filter(s => s.id !== id));
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
   };
 
@@ -207,9 +232,15 @@ export default function AdminDashboard({ user, onLogout }) {
       setAccountCreds({ email: '', password: '' });
       setTeam(prev => prev.map(m => m.id === memberId ? { ...m, email: accountCreds.email } : m));
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
     setSaving(false);
+  };
+
+  const handleConfirm = (value) => {
+    if (confirmResolveRef.current) confirmResolveRef.current(value);
+    confirmResolveRef.current = null;
+    setConfirmMsg(null);
   };
 
   const uploadTeamImage = async (e) => {
@@ -229,7 +260,7 @@ export default function AdminDashboard({ user, onLogout }) {
       setForm(prev => ({ ...prev, image: data.image }));
       setTeam(prev => prev.map(m => m.id === editing.id ? { ...m, image: data.image } : m));
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
     setImgUploading(false);
   };
@@ -272,13 +303,14 @@ export default function AdminDashboard({ user, onLogout }) {
       if (!res.ok) throw new Error(data.error);
       setGallery(prev => [...prev, data]);
     } catch (e) {
-      alert(e.message);
+      showToast(e.message, 'error');
     }
     setGalleryUploading(false);
   };
 
   const deleteGallery = async (id) => {
-    if (!confirm('Delete this gallery image?')) return;
+    const ok = await showConfirm('Delete this gallery image?');
+    if (!ok) return;
     try {
       const res = await fetch(`${BASE}/admin/gallery/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error('Delete failed');
@@ -692,6 +724,8 @@ export default function AdminDashboard({ user, onLogout }) {
           </div>
         ) : null}
       </div>
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <ConfirmModal message={confirmMsg} onConfirm={() => handleConfirm(true)} onCancel={() => handleConfirm(false)} />
     </div>
   );
 }
