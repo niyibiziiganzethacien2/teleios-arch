@@ -1,12 +1,9 @@
 {
-  "name": "teleios-backend",
-  "version": "0.1.0",
-  "description": "Minimal Node/Express backend for Teleios frontend",
-  "main": "index.js",
+  "name": "teleios-architecture",
+  "private": true,
   "scripts": {
-    "build": "cd ../frontend && npm install --no-audit --no-fund && npm run build",
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "build": "cd frontend && npm install && npm run build",
+    "start": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
