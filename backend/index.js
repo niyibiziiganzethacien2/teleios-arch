@@ -5,7 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const multer = require('multer');
-const { query, init } = require('./db/postgres');
+const { query, init } = require('./db');
 const { authenticate, requireRole } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 

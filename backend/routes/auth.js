@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const bcrypt = require('bcryptjs');
-const { query } = require('../db/postgres');
+const { query } = require('../db');
 const { signToken, authenticate } = require('../middleware/auth');
 
 const router = Router();
