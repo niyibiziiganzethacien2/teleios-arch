@@ -5,8 +5,24 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const multer = require('multer');
-const { query, init } = require('./db');
 const { authenticate, requireRole } = require('./middleware/auth');
+
+let db, query, init;
+
+async function loadDb() {
+  try {
+    const m = require('./db');
+    db = m;
+    query = m.query;
+    init = m.init;
+    await init();
+    console.log('Database ready');
+  } catch (e) {
+    console.error('Database load failed:', e.message);
+    query = async () => { throw new Error('Database not available'); };
+  }
+}
+
 const authRoutes = require('./routes/auth');
 
 const app = express();
@@ -356,12 +372,11 @@ app.get('*', (req, res, next) => {
   });
 });
 
-init().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    seedData().catch(err => console.error('Seed data error:', err.message, err.code));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  loadDb().then(() => {
+    seedData().catch(err => console.error('Seed data error:', err.message));
+  }).catch(err => {
+    console.error('Database init failed:', err);
   });
-}).catch(err => {
-  console.error('Database init failed:', err);
-  process.exit(1);
 });
