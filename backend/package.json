@@ -4,7 +4,7 @@
   "description": "Minimal Node/Express backend for Teleios frontend",
   "main": "index.js",
   "scripts": {
-    "build": "cd ../frontend && npm ci && npm run build",
+    "build": "cd ../frontend && npm install && npm run build",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },

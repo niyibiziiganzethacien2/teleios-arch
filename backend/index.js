@@ -25,6 +25,18 @@ app.use(express.json());
 
 app.get('/api/ping', (req, res) => res.json({ ok: true }));
 
+app.get('/', (req, res) => {
+  const distIndex = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+  fs.access(distIndex, fs.constants.F_OK, (err) => {
+    if (!err) return res.sendFile(distIndex);
+    res.json({ msg: 'Server running, no frontend build found', cwd: process.cwd(), dir: __dirname });
+  });
+});
+
+app.get('/api/debug', (req, res) => {
+  res.json({ hasDB: !!process.env.DATABASE_URL, cwd: process.cwd(), node: process.version, pid: process.pid, uptime: process.uptime() });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/uploads', express.static(uploadsDir));
 
