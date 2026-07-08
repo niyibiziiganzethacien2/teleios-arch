@@ -11,6 +11,13 @@ const pool = new Pool({
 });
 
 async function init() {
+  try {
+    await pool.query(`SELECT 1`);
+    console.log('PostgreSQL connected');
+  } catch (err) {
+    console.error('PostgreSQL connection failed:', err.message, err.code);
+    throw err;
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -78,5 +85,9 @@ function query(sql, params = []) {
     }
   });
 }
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err.message, err.code || '');
+});
 
 module.exports = { query, pool, init };
