@@ -45,6 +45,9 @@ export default function AdminDashboard({ user, onLogout }) {
   const [imgUploading, setImgUploading] = useState(false);
   const imgRef = useRef(null);
   const [saving, setSaving] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg, setPwMsg] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -229,6 +232,27 @@ export default function AdminDashboard({ user, onLogout }) {
       alert(e.message);
     }
     setImgUploading(false);
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (!pwForm.currentPassword || !pwForm.newPassword) { setPwMsg('Fill in all fields'); return; }
+    if (pwForm.newPassword.length < 6) { setPwMsg('New password must be at least 6 characters'); return; }
+    if (pwForm.newPassword !== pwForm.confirm) { setPwMsg('Passwords do not match'); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch(`${BASE}/auth/password`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setPwMsg('Password changed');
+      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+      setTimeout(() => setPwMsg(''), 3000);
+    } catch (e) { setPwMsg(e.error || e.message); }
+    setPwSaving(false);
   };
 
   const uploadGallery = async (e) => {
@@ -636,6 +660,34 @@ export default function AdminDashboard({ user, onLogout }) {
                 <span className="admin__settings-label">Role</span>
                 <span className="admin__settings-value admin__settings-value--gold">{user?.role || 'admin'}</span>
               </div>
+            </div>
+            <div className="admin__settings-card" style={{ marginTop: '1.5rem' }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 600, color: '#f0ece4', marginBottom: '1rem' }}>Change Password</h3>
+              {pwMsg && <div className="member__msg">{pwMsg}</div>}
+              <form onSubmit={changePassword}>
+                <div className="admin__team-form-grid">
+                  <div>
+                    <label className="member__label">Current Password</label>
+                    <input className="admin__form-input" type="password" value={pwForm.currentPassword}
+                      onChange={e => setPwForm({...pwForm, currentPassword: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="member__label">New Password</label>
+                    <input className="admin__form-input" type="password" value={pwForm.newPassword}
+                      onChange={e => setPwForm({...pwForm, newPassword: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="member__label">Confirm New Password</label>
+                    <input className="admin__form-input" type="password" value={pwForm.confirm}
+                      onChange={e => setPwForm({...pwForm, confirm: e.target.value})} />
+                  </div>
+                </div>
+                <div style={{ marginTop: '1rem' }}>
+                  <button className="admin__btn" type="submit" disabled={pwSaving}>
+                    {pwSaving ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         ) : null}
