@@ -312,5 +312,5 @@ app.get('*', (req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  seedData().catch(err => console.error('Seed data error:', err.message));
+  seedData().catch(err => console.error('Seed data error:', err.message, err.code));
 });
