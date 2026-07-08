@@ -5,7 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const multer = require('multer');
-const pool = require('./db/mysql');
+const { query } = require('./db/sqlite');
 const { authenticate, requireRole } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 
@@ -30,21 +30,21 @@ app.use('/uploads', express.static(uploadsDir));
 
 app.get('/api/team', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image FROM team ORDER BY id');
+    const [rows] = await query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image FROM team ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/services', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, number, title, description AS `desc` FROM services ORDER BY id');
+    const [rows] = await query('SELECT id, number, title, description AS "desc" FROM services ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/gallery', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, src, alt, width, height FROM gallery ORDER BY id');
+    const [rows] = await query('SELECT id, src, alt, width, height FROM gallery ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -55,7 +55,7 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'name, email and message are required' });
   }
   try {
-    await pool.query('INSERT INTO contacts (name, email, subject, message) VALUES (?, ?, ?, ?)', [name, email, subject || '', message]);
+    await query('INSERT INTO contacts (name, email, subject, message) VALUES (?, ?, ?, ?)', [name, email, subject || '', message]);
     if (process.env.SMTP_HOST && process.env.CONTACT_TO_EMAIL) {
       try {
         const transporter = nodemailer.createTransport({
@@ -82,21 +82,21 @@ app.post('/api/contact', async (req, res) => {
 
 app.get('/api/admin/contacts', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM contacts ORDER BY createdAt DESC');
+    const [rows] = await query('SELECT * FROM contacts ORDER BY createdAt DESC');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/admin/users', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, email, name, role, createdAt FROM users ORDER BY id');
+    const [rows] = await query('SELECT id, email, name, role, createdAt FROM users ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/admin/contacts/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [result] = await pool.query('DELETE FROM contacts WHERE id = ?', [Number(req.params.id)]);
+    const [result] = await query('DELETE FROM contacts WHERE id = ?', [Number(req.params.id)]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'contact not found' });
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -104,7 +104,7 @@ app.delete('/api/admin/contacts/:id', authenticate, requireRole('admin'), async 
 
 app.get('/api/admin/team', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM team ORDER BY id');
+    const [rows] = await query('SELECT * FROM team ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -115,11 +115,11 @@ app.post('/api/admin/team', authenticate, requireRole('admin'), async (req, res)
     return res.status(400).json({ error: 'initials, name and role required' });
   }
   try {
-    const [result] = await pool.query(
+    const [result] = await query(
       'INSERT INTO team (initials, name, role, bio, quote, borderColor, gradient, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [initials, name, role, bio || '', quote || '', borderColor || '#D4AF37', gradient || '', image || null]
     );
-    const [rows] = await pool.query('SELECT * FROM team WHERE id = ?', [result.insertId]);
+    const [rows] = await query('SELECT * FROM team WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -128,28 +128,28 @@ app.put('/api/admin/team/:id', authenticate, requireRole('admin'), async (req, r
   const id = Number(req.params.id);
   const { initials, name, role, bio, quote, borderColor, gradient, image } = req.body || {};
   try {
-    const [result] = await pool.query(
+    const [result] = await query(
       'UPDATE team SET initials = COALESCE(?, initials), name = COALESCE(?, name), role = COALESCE(?, role), bio = COALESCE(?, bio), quote = COALESCE(?, quote), borderColor = COALESCE(?, borderColor), gradient = COALESCE(?, gradient), image = COALESCE(?, image) WHERE id = ?',
       [initials, name, role, bio, quote, borderColor, gradient, image, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'team member not found' });
-    const [rows] = await pool.query('SELECT * FROM team WHERE id = ?', [id]);
+    const [rows] = await query('SELECT * FROM team WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/admin/team/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM team WHERE id = ?', [Number(req.params.id)]);
+    const [rows] = await query('SELECT * FROM team WHERE id = ?', [Number(req.params.id)]);
     if (rows.length === 0) return res.status(404).json({ error: 'team member not found' });
-    await pool.query('DELETE FROM team WHERE id = ?', [Number(req.params.id)]);
+    await query('DELETE FROM team WHERE id = ?', [Number(req.params.id)]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/admin/services', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, number, title, description AS `desc` FROM services ORDER BY id');
+    const [rows] = await query('SELECT id, number, title, description AS "desc" FROM services ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -160,8 +160,8 @@ app.post('/api/admin/services', authenticate, requireRole('admin'), async (req, 
     return res.status(400).json({ error: 'number, title and desc required' });
   }
   try {
-    const [result] = await pool.query('INSERT INTO services (number, title, description) VALUES (?, ?, ?)', [number, title, desc]);
-    const [rows] = await pool.query('SELECT id, number, title, description AS `desc` FROM services WHERE id = ?', [result.insertId]);
+    const [result] = await query('INSERT INTO services (number, title, description) VALUES (?, ?, ?)', [number, title, desc]);
+    const [rows] = await query('SELECT id, number, title, description AS "desc" FROM services WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -170,21 +170,21 @@ app.put('/api/admin/services/:id', authenticate, requireRole('admin'), async (re
   const id = Number(req.params.id);
   const { number, title, desc } = req.body || {};
   try {
-    const [result] = await pool.query(
+    const [result] = await query(
       'UPDATE services SET number = COALESCE(?, number), title = COALESCE(?, title), description = COALESCE(?, description) WHERE id = ?',
       [number, title, desc, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'service not found' });
-    const [rows] = await pool.query('SELECT id, number, title, description AS `desc` FROM services WHERE id = ?', [id]);
+    const [rows] = await query('SELECT id, number, title, description AS "desc" FROM services WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/admin/services/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, number, title, description AS `desc` FROM services WHERE id = ?', [Number(req.params.id)]);
+    const [rows] = await query('SELECT id, number, title, description AS "desc" FROM services WHERE id = ?', [Number(req.params.id)]);
     if (rows.length === 0) return res.status(404).json({ error: 'service not found' });
-    await pool.query('DELETE FROM services WHERE id = ?', [Number(req.params.id)]);
+    await query('DELETE FROM services WHERE id = ?', [Number(req.params.id)]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -195,26 +195,26 @@ app.post('/api/admin/team-account', authenticate, requireRole('admin'), async (r
     return res.status(400).json({ error: 'teamMemberId, email and password required' });
   }
   try {
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const [existing] = await query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existing.length > 0) {
       return res.status(409).json({ error: 'email already registered' });
     }
-    const [memberRows] = await pool.query('SELECT id FROM team WHERE id = ?', [teamMemberId]);
+    const [memberRows] = await query('SELECT id FROM team WHERE id = ?', [teamMemberId]);
     if (memberRows.length === 0) {
       return res.status(404).json({ error: 'team member not found' });
     }
     const hashed = await bcrypt.hash(password, 12);
-    const [result] = await pool.query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)',
+    const [result] = await query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)',
       [email.toLowerCase(), hashed, email.toLowerCase(), 'member']);
-    await pool.query('UPDATE team SET email = ?, userId = ? WHERE id = ?', [email.toLowerCase(), result.insertId, teamMemberId]);
-    const [userRows] = await pool.query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [result.insertId]);
+    await query('UPDATE team SET email = ?, userId = ? WHERE id = ?', [email.toLowerCase(), result.insertId, teamMemberId]);
+    const [userRows] = await query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [result.insertId]);
     res.status(201).json({ ok: true, user: userRows[0], teamMemberId });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/member/profile', authenticate, requireRole('admin', 'member'), async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image, email FROM team WHERE userId = ?', [req.user.id]);
+    const [rows] = await query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image, email FROM team WHERE userId = ?', [req.user.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'no team profile linked to your account' });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -223,12 +223,12 @@ app.get('/api/member/profile', authenticate, requireRole('admin', 'member'), asy
 app.put('/api/member/profile', authenticate, requireRole('admin', 'member'), async (req, res) => {
   const { initials, name, role, bio, quote, borderColor, gradient } = req.body || {};
   try {
-    const [result] = await pool.query(
+    const [result] = await query(
       'UPDATE team SET initials = COALESCE(?, initials), name = COALESCE(?, name), role = COALESCE(?, role), bio = COALESCE(?, bio), quote = COALESCE(?, quote), borderColor = COALESCE(?, borderColor), gradient = COALESCE(?, gradient) WHERE userId = ?',
       [initials, name, role, bio, quote, borderColor, gradient, req.user.id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'no team profile linked to your account' });
-    const [rows] = await pool.query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image, email FROM team WHERE userId = ?', [req.user.id]);
+    const [rows] = await query('SELECT id, initials, name, role, bio, quote, borderColor, gradient, image, email FROM team WHERE userId = ?', [req.user.id]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -237,7 +237,7 @@ app.post('/api/member/profile/image', authenticate, requireRole('admin', 'member
   if (!req.file) return res.status(400).json({ error: 'no image file provided' });
   const imageUrl = `/uploads/${req.file.filename}`;
   try {
-    const [result] = await pool.query('UPDATE team SET image = ? WHERE userId = ?', [imageUrl, req.user.id]);
+    const [result] = await query('UPDATE team SET image = ? WHERE userId = ?', [imageUrl, req.user.id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'no team profile linked to your account' });
     res.json({ ok: true, image: imageUrl });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -247,7 +247,7 @@ app.post('/api/admin/team/:id/image', authenticate, requireRole('admin'), upload
   if (!req.file) return res.status(400).json({ error: 'no image file provided' });
   const imageUrl = `/uploads/${req.file.filename}`;
   try {
-    const [result] = await pool.query('UPDATE team SET image = ? WHERE id = ?', [imageUrl, Number(req.params.id)]);
+    const [result] = await query('UPDATE team SET image = ? WHERE id = ?', [imageUrl, Number(req.params.id)]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'team member not found' });
     res.json({ ok: true, image: imageUrl });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -255,16 +255,16 @@ app.post('/api/admin/team/:id/image', authenticate, requireRole('admin'), upload
 
 async function seedData() {
   try {
-    const [users] = await pool.query('SELECT id FROM users WHERE role = ?', ['admin']);
+    const [users] = await query('SELECT id FROM users WHERE role = ?', ['admin']);
     if (users.length === 0) {
       const email = process.env.ADMIN_EMAIL || 'admin@teleios.com';
       const password = process.env.ADMIN_PASSWORD || 'admin123';
       const hashed = await bcrypt.hash(password, 12);
-      await pool.query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email, hashed, 'Admin', 'admin']);
+      await query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email, hashed, 'Admin', 'admin']);
       console.log(`Seeded admin user: ${email} / ${password}`);
     }
 
-    const [svcRows] = await pool.query('SELECT id FROM services LIMIT 1');
+    const [svcRows] = await query('SELECT id FROM services LIMIT 1');
     if (svcRows.length === 0) {
       const services = [
         { number: '01', title: 'Architectural Design', description: 'Full-spectrum design services from initial concept to construction documentation. We develop buildings that respond authentically to their site, programme, and people with no compromise between beauty and function.' },
@@ -275,12 +275,12 @@ async function seedData() {
         { number: '06', title: 'Sustainable Design Consulting', description: 'Sustainability is not an add-on at Tereios it is embedded in every design decision we make. We advise on passive design strategies, green certifications, and environmental performance from the earliest stages of a project.' },
       ];
       for (const s of services) {
-        await pool.query('INSERT INTO services (number, title, description) VALUES (?, ?, ?)', [s.number, s.title, s.description]);
+        await query('INSERT INTO services (number, title, description) VALUES (?, ?, ?)', [s.number, s.title, s.description]);
       }
       console.log('Seeded 6 services');
     }
 
-    const [teamRows] = await pool.query('SELECT id FROM team LIMIT 1');
+    const [teamRows] = await query('SELECT id FROM team LIMIT 1');
     if (teamRows.length === 0) {
       const members = [
         { initials: 'GK', name: 'Gad KWIZERA', role: 'Founder & Principal Architect', bio: 'Updated bio text', quote: '"I never start a design until I understand why this building needs to exist."', borderColor: '#D4AF37', gradient: 'linear-gradient(145deg, #D4AF37, #03010A)' },
@@ -290,7 +290,7 @@ async function seedData() {
         { initials: 'EN', name: 'Elie NZAYISENGA', role: 'Interior Designer', bio: 'Brings warmth and precision to every interior. His eye for material pairings and spatial rhythm transforms rooms into experiences that last long in memory.', quote: null, borderColor: '#DAA520', gradient: 'linear-gradient(225deg, #DAA520, #03010A)' },
       ];
       for (const m of members) {
-        await pool.query('INSERT INTO team (initials, name, role, bio, quote, borderColor, gradient) VALUES (?, ?, ?, ?, ?, ?, ?)', [m.initials, m.name, m.role, m.bio, m.quote, m.borderColor, m.gradient]);
+        await query('INSERT INTO team (initials, name, role, bio, quote, borderColor, gradient) VALUES (?, ?, ?, ?, ?, ?, ?)', [m.initials, m.name, m.role, m.bio, m.quote, m.borderColor, m.gradient]);
       }
       console.log('Seeded 5 team members');
     }

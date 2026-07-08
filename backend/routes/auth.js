@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const bcrypt = require('bcryptjs');
-const pool = require('../db/mysql');
+const { query } = require('../db/sqlite');
 const { signToken, authenticate } = require('../middleware/auth');
 
 const router = Router();
@@ -11,7 +11,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'email and password required' });
   }
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+    const [rows] = await query('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
     if (rows.length === 0) {
       return res.status(401).json({ error: 'invalid credentials' });
     }
@@ -35,20 +35,20 @@ router.post('/register', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'email, password and name required' });
   }
   try {
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const [existing] = await query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existing.length > 0) {
       return res.status(409).json({ error: 'email already registered' });
     }
     const hashed = await bcrypt.hash(password, 12);
-    const [result] = await pool.query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email.toLowerCase(), hashed, name, role || 'viewer']);
-    const [rows] = await pool.query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [result.insertId]);
+    const [result] = await query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email.toLowerCase(), hashed, name, role || 'viewer']);
+    const [rows] = await query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [result.insertId]);
     res.status(201).json({ ok: true, user: rows[0] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [req.user.id]);
+    const [rows] = await query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [req.user.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'user not found' });
     }
@@ -65,7 +65,7 @@ router.put('/password', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'new password must be at least 6 characters' });
   }
   try {
-    const [rows] = await pool.query('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    const [rows] = await query('SELECT password FROM users WHERE id = ?', [req.user.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'user not found' });
     }
@@ -74,7 +74,7 @@ router.put('/password', authenticate, async (req, res) => {
       return res.status(401).json({ error: 'current password is incorrect' });
     }
     const hashed = await bcrypt.hash(newPassword, 12);
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id]);
+    await query('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id]);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

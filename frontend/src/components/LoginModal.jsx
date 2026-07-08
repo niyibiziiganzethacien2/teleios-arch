@@ -24,7 +24,7 @@ const LoginModal = ({ isOpen, onClose, onSuccess, useBackend = false }) => {
     }
 
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

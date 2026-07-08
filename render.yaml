@@ -8,18 +8,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      - key: DB_HOST
-        value: mysql-1aeb2ddc-teleios-arch.e.aivencloud.com
-      - key: DB_PORT
-        value: "10460"
-      - key: DB_USER
-        value: avnadmin
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_SSL
-        value: "true"
-      - key: DB_NAME
-        value: defaultdb
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
