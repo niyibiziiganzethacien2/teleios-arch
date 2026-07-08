@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const bcrypt = require('bcryptjs');
-const { query } = require('../db/sqlite');
+const { query } = require('../db/postgres');
 const { signToken, authenticate } = require('../middleware/auth');
 
 const router = Router();
@@ -41,14 +41,14 @@ router.post('/register', authenticate, async (req, res) => {
     }
     const hashed = await bcrypt.hash(password, 12);
     const [result] = await query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email.toLowerCase(), hashed, name, role || 'viewer']);
-    const [rows] = await query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [result.insertId]);
+    const [rows] = await query('SELECT id, email, name, role, "createdAt" FROM users WHERE id = ?', [result.insertId]);
     res.status(201).json({ ok: true, user: rows[0] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const [rows] = await query('SELECT id, email, name, role, createdAt FROM users WHERE id = ?', [req.user.id]);
+    const [rows] = await query('SELECT id, email, name, role, "createdAt" FROM users WHERE id = ?', [req.user.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'user not found' });
     }
