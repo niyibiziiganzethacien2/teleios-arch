@@ -304,6 +304,7 @@ app.get('*', (req, res, next) => {
   require('fs').access(index).then(() => res.sendFile(index)).catch(() => next());
 });
 
-seedData().then(() => {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  seedData().catch(err => console.error('Seed data error:', err.message));
 });
