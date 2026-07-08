@@ -44,7 +44,7 @@ app.get('/api/services', async (req, res) => {
 
 app.get('/api/gallery', async (req, res) => {
   try {
-    const [rows] = await query('SELECT id, src, alt, width, height FROM gallery ORDER BY id');
+    const [rows] = await query('SELECT id, src AS img, alt, width, height FROM gallery ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -250,6 +250,40 @@ app.post('/api/admin/team/:id/image', authenticate, requireRole('admin'), upload
     const [result] = await query('UPDATE team SET image = ? WHERE id = ?', [imageUrl, Number(req.params.id)]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'team member not found' });
     res.json({ ok: true, image: imageUrl });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/gallery', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const [rows] = await query('SELECT id, src AS img, alt, width, height FROM gallery ORDER BY id');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/gallery', authenticate, requireRole('admin'), upload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'no image file provided' });
+  const src = `/uploads/${req.file.filename}`;
+  try {
+    const [result] = await query('INSERT INTO gallery (src, alt) VALUES (?, ?)', [src, req.body.alt || '']);
+    const [rows] = await query('SELECT id, src AS img, alt, width, height FROM gallery WHERE id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/admin/gallery/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const [result] = await query('UPDATE gallery SET alt = COALESCE(?, alt) WHERE id = ?', [req.body.alt || null, Number(req.params.id)]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'gallery item not found' });
+    const [rows] = await query('SELECT id, src AS img, alt, width, height FROM gallery WHERE id = ?', [Number(req.params.id)]);
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/admin/gallery/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const [result] = await query('DELETE FROM gallery WHERE id = ?', [Number(req.params.id)]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'gallery item not found' });
+    res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

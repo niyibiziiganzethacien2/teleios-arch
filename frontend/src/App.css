@@ -1744,6 +1744,66 @@
   color: rgba(240,236,228,0.4);
 }
 
+/* ── Admin Gallery ──────────────────────────────── */
+
+.admin__gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+}
+
+.admin__gallery-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(212,175,55,0.015);
+  border: 1px solid rgba(212,175,55,0.06);
+  transition: border-color 0.2s ease;
+}
+
+.admin__gallery-card:hover { border-color: rgba(212,175,55,0.12); }
+
+.admin__gallery-card:hover .admin__gallery-overlay {
+  opacity: 1;
+}
+
+.admin__gallery-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+
+.admin__gallery-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.admin__gallery-footer {
+  padding: 0.5rem 0.7rem;
+}
+
+.admin__gallery-label {
+  font-size: 0.68rem;
+  color: rgba(240,236,228,0.3);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .admin__gallery-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .admin__gallery-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 .admin__reports-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -18,6 +18,7 @@ const sections = [
   { id: 'messages', label: 'Messages' },
   { id: 'team', label: 'Team' },
   { id: 'services', label: 'Services' },
+  { id: 'gallery', label: 'Gallery' },
   { id: 'reports', label: 'Reports' },
   { id: 'settings', label: 'Settings' },
 ];
@@ -27,6 +28,7 @@ export default function AdminDashboard({ user, onLogout }) {
   const [contacts, setContacts] = useState([]);
   const [team, setTeam] = useState([]);
   const [services, setServices] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMsg, setSelectedMsg] = useState(null);
@@ -38,6 +40,8 @@ export default function AdminDashboard({ user, onLogout }) {
   const [serviceForm, setServiceForm] = useState({});
   const [accountForm, setAccountForm] = useState(null);
   const [accountCreds, setAccountCreds] = useState({ email: '', password: '' });
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryFileRef = useRef(null);
   const [imgUploading, setImgUploading] = useState(false);
   const imgRef = useRef(null);
   const [saving, setSaving] = useState(false);
@@ -70,6 +74,13 @@ export default function AdminDashboard({ user, onLogout }) {
         fetch(`${BASE}/services`)
           .then(r => r.json())
           .then(d => setServices(Array.isArray(d) ? d : d.value || []))
+      );
+    }
+    if (active === 'gallery' || active === 'overview') {
+      fetches.push(
+        fetch(`${BASE}/admin/gallery`, { headers: authHeaders() })
+          .then(r => r.json())
+          .then(d => setGallery(Array.isArray(d) ? d : d.value || []))
       );
     }
     if (active === 'overview' || active === 'reports') {
@@ -218,6 +229,39 @@ export default function AdminDashboard({ user, onLogout }) {
       alert(e.message);
     }
     setImgUploading(false);
+  };
+
+  const uploadGallery = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGalleryUploading(true);
+    const fd = new FormData();
+    fd.append('image', file);
+    fd.append('alt', file.name.replace(/\.[^.]+$/, ''));
+    try {
+      const res = await fetch(`${BASE}/admin/gallery`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setGallery(prev => [...prev, data]);
+    } catch (e) {
+      alert(e.message);
+    }
+    setGalleryUploading(false);
+  };
+
+  const deleteGallery = async (id) => {
+    if (!confirm('Delete this gallery image?')) return;
+    try {
+      const res = await fetch(`${BASE}/admin/gallery/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error('Delete failed');
+      setGallery(prev => prev.filter(g => g.id !== id));
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
   return (
@@ -517,6 +561,32 @@ export default function AdminDashboard({ user, onLogout }) {
                 </div>
               </div>
             ))}
+          </div>
+        ) : active === 'gallery' ? (
+          <div className="admin__section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h2 className="admin__section-title" style={{ marginBottom: 0 }}>Gallery</h2>
+              <input ref={galleryFileRef} type="file" accept="image/*" onChange={uploadGallery} style={{ display: 'none' }} />
+              <button className="admin__btn" onClick={() => galleryFileRef.current?.click()} disabled={galleryUploading}>
+                {galleryUploading ? 'Uploading...' : '+ Add Image'}
+              </button>
+            </div>
+            <div className="admin__gallery-grid">
+              {gallery.map((item, i) => (
+                <div key={item.id || i} className="admin__gallery-card">
+                  <img src={item.img} alt={item.alt || ''} className="admin__gallery-img" />
+                  <div className="admin__gallery-overlay">
+                    <button className="admin__btn admin__btn--sm admin__btn--danger" onClick={() => deleteGallery(item.id)}>
+                      Delete
+                    </button>
+                  </div>
+                  <div className="admin__gallery-footer">
+                    <span className="admin__gallery-label">{item.alt || 'untitled'}</span>
+                  </div>
+                </div>
+              ))}
+              {gallery.length === 0 && <div className="admin__empty">No gallery images yet</div>}
+            </div>
           </div>
         ) : active === 'reports' ? (
           <div className="admin__section">
