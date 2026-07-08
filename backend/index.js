@@ -23,6 +23,8 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
+
 app.use('/api/auth', authRoutes);
 app.use('/uploads', express.static(uploadsDir));
 
