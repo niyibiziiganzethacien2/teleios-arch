@@ -24,7 +24,7 @@ const defaultTeam = [
   },
   {
     initials: 'NIT',
-    name: 'NIYIBIZI IGANZE   Thacien',
+    name: 'NIYIBIZI IGANZE Thacier',
     role: 'Project Architect',
     bio: 'Manages complex multi-phase projects with precision and calm. Her background in structural coordination means she speaks fluently across disciplines.',
     borderColor: '#F5D76E',
