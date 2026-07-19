@@ -28,13 +28,15 @@ const authRoutes = require('./routes/auth');
 const app = express();
 const PORT = process.env.PORT || 7000;
 
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`),
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+async function storeImage(file) {
+  const mime = file.mimetype || 'image/jpeg';
+  const data = file.buffer.toString('base64');
+  const [, result] = await query('INSERT INTO uploads (data, mime) VALUES (?, ?)', [data, mime]);
+  return `/api/uploads/${result.insertId}`;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -54,7 +56,17 @@ app.get('/api/debug', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/uploads', express.static(uploadsDir));
+
+app.get('/api/uploads/:id', async (req, res) => {
+  try {
+    const [rows] = await query('SELECT data, mime FROM uploads WHERE id = ?', [Number(req.params.id)]);
+    if (rows.length === 0) return res.status(404).json({ error: 'not found' });
+    const buf = Buffer.from(rows[0].data, 'base64');
+    res.set('Content-Type', rows[0].mime);
+    res.set('Cache-Control', 'public, max-age=31536000');
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 app.get('/api/team', async (req, res) => {
   try {
@@ -263,8 +275,8 @@ app.put('/api/member/profile', authenticate, requireRole('admin', 'member'), asy
 
 app.post('/api/member/profile/image', authenticate, requireRole('admin', 'member'), upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no image file provided' });
-  const imageUrl = `/uploads/${req.file.filename}`;
   try {
+    const imageUrl = await storeImage(req.file);
     const [result] = await query('UPDATE team SET image = ? WHERE "userId" = ?', [imageUrl, req.user.id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'no team profile linked to your account' });
     res.json({ ok: true, image: imageUrl });
@@ -273,8 +285,8 @@ app.post('/api/member/profile/image', authenticate, requireRole('admin', 'member
 
 app.post('/api/admin/team/:id/image', authenticate, requireRole('admin'), upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no image file provided' });
-  const imageUrl = `/uploads/${req.file.filename}`;
   try {
+    const imageUrl = await storeImage(req.file);
     const [result] = await query('UPDATE team SET image = ? WHERE id = ?', [imageUrl, Number(req.params.id)]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'team member not found' });
     res.json({ ok: true, image: imageUrl });
@@ -290,8 +302,8 @@ app.get('/api/admin/gallery', authenticate, requireRole('admin'), async (req, re
 
 app.post('/api/admin/gallery', authenticate, requireRole('admin'), upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no image file provided' });
-  const src = `/uploads/${req.file.filename}`;
   try {
+    const src = await storeImage(req.file);
     const [result] = await query('INSERT INTO gallery (src, alt) VALUES (?, ?)', [src, req.body.alt || '']);
     const [rows] = await query('SELECT id, src AS img, alt, width, height FROM gallery WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);

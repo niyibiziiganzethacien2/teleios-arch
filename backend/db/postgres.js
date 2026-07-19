@@ -65,6 +65,12 @@ async function init() {
       message TEXT NOT NULL,
       "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS uploads (
+      id SERIAL PRIMARY KEY,
+      data TEXT NOT NULL,
+      mime TEXT NOT NULL DEFAULT 'image/jpeg'
+    )`);
 }
 
 let paramCounter = 0;
