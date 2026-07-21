@@ -12,6 +12,6 @@ services:
       - key: ADMIN_EMAIL
         value: admin@teleios.com
       - key: ADMIN_PASSWORD
-        generateValue: true
+        value: admin123
       - key: DATABASE_URL
         sync: false
