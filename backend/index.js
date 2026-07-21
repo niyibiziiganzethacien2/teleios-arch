@@ -332,7 +332,7 @@ async function seedData() {
     const [users] = await query('SELECT id FROM users WHERE role = ?', ['admin']);
     if (users.length === 0) {
       const email = process.env.ADMIN_EMAIL || 'admin@teleios.com';
-      const password = process.env.ADMIN_PASSWORD || 'admin123';
+      const password = 'admin123';
       const hashed = await bcrypt.hash(password, 12);
       await query('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)', [email, hashed, 'Admin', 'admin']);
       console.log(`Seeded admin user: ${email} / ${password}`);
