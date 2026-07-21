@@ -19,6 +19,20 @@ async function loadDb() {
     console.log('Database ready');
   } catch (e) {
     console.error('Database load failed:', e.message);
+    if (process.env.DATABASE_URL) {
+      console.log('Falling back to file-based storage...');
+      try {
+        const file = require('./db/file');
+        db = file;
+        query = file.query;
+        init = file.init;
+        await init();
+        console.log('File-based storage ready (fallback)');
+        return;
+      } catch (e2) {
+        console.error('File fallback also failed:', e2.message);
+      }
+    }
     query = async () => { throw new Error('Database not available'); };
   }
 }
